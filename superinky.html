@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>SuperInky Cave</title>
+  <title>SuperInky</title>
   <style>
-    html, body { margin: 0; padding: 0; overflow: hidden; background: #111; }
-    #game { display: block; margin: 0 auto; background: #222; }
+    html, body { margin: 0; padding: 0; background: transparent; overflow: hidden; }
+    #game { display: block; margin: 0 auto; background: #87CEEB; }
   </style>
 </head>
 <body>
@@ -14,107 +14,105 @@
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
 
-    // Hero frames
+    // ----- Preload Hero Frames -----
     const frames = ['superinky_fly1.PNG','superinky_fly2.PNG'].map(src => {
       const img = new Image(); img.src = src; return img;
     });
     let frameIndex = 0;
 
-    // Hero properties
-    const heroW = 64, heroH = 64;
-    let heroX = canvas.width/4, heroY = canvas.height/2, velocity = 0;
-    const gravity = 0.3, jump = -7;
+    // ----- Hero properties -----
+    const heroWidth = 64;
+    const heroHeight = 64;
+    let heroX = canvas.width / 4;
+    let heroY = canvas.height / 2;
+    let velocity = 0;
 
-    // Cave parameters
-    const segmentWidth = 20;
-    const caveGap = 200;
-    const caveSpeed = 2;
-    const segments = [];
-    let offset = 0;
+    // ----- Physics & Control -----
+    const gravity = 0.05;
+    const jump = -3;
 
-    // Initialize cave segments
-    const segCount = Math.ceil(canvas.width/segmentWidth) + 1;
-    let lastTop = 100;
-    for (let i=0;i<segCount;i++) {
-      segments.push(createSegment());
+    // ----- Obstacle (skyscraper) setup -----
+    const skyscraperImg = new Image();
+    skyscraperImg.src = 'skyscraper.PNG';
+    const OBSTACLE_WIDTH   = 80;
+    const OBSTACLE_GAP     = 360;
+    const OBSTACLE_SPACING = 400;
+    const skyscraperSpeed  = 1;
+    const obstacles = [];
+
+    function spawnObstacle(x) {
+      const topHeight = 50 + Math.random() * (canvas.height - OBSTACLE_GAP - 100);
+      obstacles.push({ x, topHeight, bottomY: topHeight + OBSTACLE_GAP });
     }
 
-    function createSegment() {
-      // vary top between 50 and canvas.height - gap - 50
-      const variation = (Math.random()-0.5)*40;
-      lastTop = Math.max(50, Math.min(lastTop + variation, canvas.height - caveGap - 50));
-      return { top: lastTop, bottom: lastTop + caveGap };
+    // Seed initial obstacles
+    for (let x = canvas.width; x < canvas.width + OBSTACLE_SPACING * 3; x += OBSTACLE_SPACING) {
+      spawnObstacle(x);
     }
 
-    function updateCave() {
-      offset += caveSpeed;
-      if (offset >= segmentWidth) {
-        offset -= segmentWidth;
-        segments.shift();
-        segments.push(createSegment());
-      }
-    }
-
-    function updateHero() {
+    // ----- Update function -----
+    function update() {
+      // Hero physics
       velocity += gravity;
       heroY += velocity;
       if (heroY < 0) heroY = 0;
-      if (heroY+heroH > canvas.height) { heroY = canvas.height-heroH; velocity=0; }
-    }
-
-    function checkCollision() {
-      // Determine which segment hero is in
-      const idx = Math.floor((heroX+heroW/2 + offset)/segmentWidth);
-      const seg = segments[idx] || segments[0];
-      if (heroY < seg.top || heroY+heroH > seg.bottom) {
-        // reset game
-        initGame();
+      if (heroY + heroHeight > canvas.height) {
+        heroY = canvas.height - heroHeight;
+        velocity = 0;
       }
+
+      // Move obstacles
+      obstacles.forEach(obs => obs.x -= skyscraperSpeed);
+      const last = obstacles[obstacles.length - 1];
+      if (last.x < canvas.width - OBSTACLE_SPACING) spawnObstacle(canvas.width);
+      if (obstacles[0].x + OBSTACLE_WIDTH < 0) obstacles.shift();
     }
 
-    function drawCave() {
-      for (let i=0;i<segments.length;i++) {
-        const x = i*segmentWidth - offset;
-        const seg = segments[i];
-        // top wall
-        ctx.fillStyle = '#444';
-        ctx.fillRect(x,0,segmentWidth,seg.top);
-        // bottom wall
-        ctx.fillRect(x,seg.bottom,segmentWidth,canvas.height-seg.bottom);
-      }
+    // ----- Draw function -----
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw skyscrapers
+      obstacles.forEach(obs => {
+        // Top building (upside down)
+        ctx.save();
+        ctx.translate(obs.x, obs.topHeight);
+        ctx.scale(1, -1);
+        ctx.drawImage(
+          skyscraperImg,
+          0, 0, skyscraperImg.width, obs.topHeight,
+          0, 0, OBSTACLE_WIDTH, obs.topHeight
+        );
+        ctx.restore();
+        // Bottom building
+        const bottomHeight = canvas.height - obs.bottomY;
+        ctx.drawImage(
+          skyscraperImg,
+          0, skyscraperImg.height - bottomHeight,
+          skyscraperImg.width, bottomHeight,
+          obs.x, obs.bottomY, OBSTACLE_WIDTH, bottomHeight
+        );
+      });
+
+      // Draw hero frame
+      const heroImg = frames[frameIndex];
+      ctx.drawImage(heroImg, heroX, heroY, heroWidth, heroHeight);
     }
 
-    function drawHero() {
-      const img = frames[frameIndex];
-      ctx.drawImage(img, heroX, heroY, heroW, heroH);
-    }
-
+    // ----- Game loop -----
     function loop() {
-      updateCave();
-      updateHero();
-      checkCollision();
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      drawCave();
-      drawHero();
+      update();
+      draw();
       requestAnimationFrame(loop);
     }
+    loop();
 
-    function initGame() {
-      segments.length = 0;
-      lastTop = 100;
-      for (let i=0;i<segCount;i++) segments.push(createSegment());
-      offset = 0;
-      heroY = canvas.height/2; velocity = 0;
-    }
-
-    canvas.addEventListener('click',()=>{
+    // ----- Input handler -----
+    canvas.addEventListener('click', () => {
       velocity = jump;
       frameIndex = 1;
-      setTimeout(()=>frameIndex=0,100);
+      setTimeout(() => { frameIndex = 0; }, 100);
     });
-
-    initGame();
-    loop();
   </script>
 </body>
 </html>
