@@ -1,94 +1,102 @@
-<script>
-const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SuperInky</title>
+  <style>
+    html, body { margin: 0; padding: 0; background: transparent; overflow: hidden; }
+    #game { display: block; margin: 0 auto; background: #87CEEB; }
+  </style>
+</head>
+<body>
+  <canvas id="game" width="800" height="600"></canvas>
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const canvas = document.getElementById('game');
+      const ctx = canvas.getContext('2d');
 
-// Preload hero frames
-const frames = ['superinky_fly1.PNG', 'superinky_fly2.PNG'].map(src => {
-  const img = new Image(); img.src = src; return img;
-});
-let frameIndex = 0;
+      const frames = ['superinky_fly1.PNG', 'superinky_fly2.PNG'].map(src => {
+        const img = new Image(); img.src = src; return img;
+      });
+      let frameIndex = 0;
 
-// Hero properties
-const heroWidth = 64, heroHeight = 64;
-const heroX = canvas.width / 4;
-let heroY = canvas.height / 2;
-let velocity = 0;
+      const heroWidth = 64, heroHeight = 64;
+      const heroX = canvas.width / 4;
+      let heroY = canvas.height / 2;
+      let velocity = 0;
 
-// Physics & control
-const gravity = 0.05;
-const jump = -3;
+      const gravity = 0.05;
+      const jump = -3;
 
-// Obstacle setup: 3 skyscraper variants
-const skyscraperSrcs = ['skyscraper1.PNG', 'skyscraper2.PNG', 'skyscraper3.PNG'];
-const skyscraperImgs = skyscraperSrcs.map(src => {
-  const img = new Image(); img.src = src; return img;
-});
+      const skyscraperSrcs = ['skyscraper1.PNG', 'skyscraper2.PNG', 'skyscraper3.PNG'];
+      const skyscraperImgs = skyscraperSrcs.map(src => {
+        const img = new Image(); img.src = src; return img;
+      });
 
-// Use native width of first image (adjust as needed)
-const OBSTACLE_GAP = 360;
-const OBSTACLE_SPACING = 400;
-const skyscraperSpeed = 1;
-const obstacles = [];
+      const OBSTACLE_GAP = 360;
+      const OBSTACLE_SPACING = 400;
+      const skyscraperSpeed = 1;
+      const obstacles = [];
 
-function spawnObstacle(x) {
-  const img = skyscraperImgs[Math.floor(Math.random() * skyscraperImgs.length)];
-  const obstacleWidth = img.width;
-  const topHeight = 50 + Math.random() * (canvas.height - OBSTACLE_GAP - 100);
-  obstacles.push({ x, topHeight, bottomY: topHeight + OBSTACLE_GAP, img, obstacleWidth });
-}
+      function spawnObstacle(x) {
+        const img = skyscraperImgs[Math.floor(Math.random() * skyscraperImgs.length)];
+        const obstacleWidth = img.width;
+        const topHeight = 50 + Math.random() * (canvas.height - OBSTACLE_GAP - 100);
+        obstacles.push({ x, topHeight, bottomY: topHeight + OBSTACLE_GAP, img, obstacleWidth });
+      }
 
-// Seed initial obstacles
-for (let x = canvas.width; x < canvas.width + OBSTACLE_SPACING * 3; x += OBSTACLE_SPACING) {
-  spawnObstacle(x);
-}
+      for (let x = canvas.width; x < canvas.width + OBSTACLE_SPACING * 3; x += OBSTACLE_SPACING) {
+        spawnObstacle(x);
+      }
 
-function update() {
-  velocity += gravity;
-  heroY += velocity;
-  if (heroY < 0) heroY = 0;
-  if (heroY + heroHeight > canvas.height) {
-    heroY = canvas.height - heroHeight;
-    velocity = 0;
-  }
-  obstacles.forEach(obs => obs.x -= skyscraperSpeed);
-  const last = obstacles[obstacles.length - 1];
-  if (last.x < canvas.width - OBSTACLE_SPACING) spawnObstacle(canvas.width);
-  if (obstacles[0].x + obstacles[0].obstacleWidth < 0) obstacles.shift();
-}
+      function update() {
+        velocity += gravity;
+        heroY += velocity;
+        if (heroY < 0) heroY = 0;
+        if (heroY + heroHeight > canvas.height) {
+          heroY = canvas.height - heroHeight;
+          velocity = 0;
+        }
+        obstacles.forEach(obs => obs.x -= skyscraperSpeed);
+        const last = obstacles[obstacles.length - 1];
+        if (last.x < canvas.width - OBSTACLE_SPACING) spawnObstacle(canvas.width);
+        if (obstacles[0].x + obstacles[0].obstacleWidth < 0) obstacles.shift();
+      }
 
-function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  obstacles.forEach(obs => {
-    // Top (upside-down)
-    ctx.save();
-    ctx.translate(obs.x, obs.topHeight);
-    ctx.scale(1, -1);
-    for (let y = 0; y < obs.topHeight; y += obs.img.height) {
-      ctx.drawImage(obs.img, 0, y, obs.img.width, obs.img.height);
-    }
-    ctx.restore();
-    // Bottom
-    const bottomHeight = canvas.height - obs.bottomY;
-    for (let y = 0; y < bottomHeight; y += obs.img.height) {
-      ctx.drawImage(obs.img, obs.x, obs.bottomY + y, obs.img.width, obs.img.height);
-    }
-  });
-  // Hero
-  const heroImg = frames[frameIndex];
-  ctx.drawImage(heroImg, heroX, heroY, heroWidth, heroHeight);
-}
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        obstacles.forEach(obs => {
+          ctx.save();
+          ctx.translate(obs.x, obs.topHeight);
+          ctx.scale(1, -1);
+          for (let y = 0; y < obs.topHeight; y += obs.img.height) {
+            ctx.drawImage(obs.img, 0, y);
+          }
+          ctx.restore();
 
-function loop() {
-  update();
-  draw();
-  requestAnimationFrame(loop);
-}
-loop();
+          const bottomHeight = canvas.height - obs.bottomY;
+          for (let y = 0; y < bottomHeight; y += obs.img.height) {
+            ctx.drawImage(obs.img, obs.x, obs.bottomY + y);
+          }
+        });
 
-// Input
-canvas.addEventListener('click', () => {
-  velocity = jump;
-  frameIndex = 1;
-  setTimeout(() => frameIndex = 0, 100);
-});
-</script>
+        const heroImg = frames[frameIndex];
+        ctx.drawImage(heroImg, heroX, heroY, heroWidth, heroHeight);
+      }
+
+      function loop() {
+        update();
+        draw();
+        requestAnimationFrame(loop);
+      }
+      loop();
+
+      canvas.addEventListener('click', () => {
+        velocity = jump;
+        frameIndex = 1;
+        setTimeout(() => frameIndex = 0, 100);
+      });
+    });
+  </script>
+</body>
+</html>
