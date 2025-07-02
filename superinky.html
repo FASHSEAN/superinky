@@ -14,22 +14,19 @@
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
 
-    // ----- Preload Hero Frames -----
-    const frames = ['/images/superinky_fly1.png','/images/superinky_fly2.png'].map(src => {
+    const frames = ['/images/superinky_fly1.PNG','/images/superinky_fly2.PNG'].map(src => {
       const img = new Image(); img.src = src; return img;
     });
     let frameIndex = 0;
 
-    // ----- Hero properties -----
     const heroWidth = 64;
     const heroHeight = 64;
     let heroX = canvas.width / 4;
     let heroY = canvas.height / 2;
     let velocity = 0;
 
-    // ----- Obstacle (skyscraper) setup -----
     const skyscraperImg = new Image();
-    skyscraperImg.src = '/images/skyscraper.png';
+    skyscraperImg.src = '/images/skyscraper.PNG';
     const OBSTACLE_WIDTH   = 80;
     const OBSTACLE_GAP     = 150;
     const OBSTACLE_SPACING = 200;
@@ -40,14 +37,11 @@
       obstacles.push({ x, topHeight, bottomY: topHeight + OBSTACLE_GAP });
     }
 
-    // Seed initial obstacles
     for (let x = canvas.width; x < canvas.width + OBSTACLE_SPACING * 3; x += OBSTACLE_SPACING) {
       spawnObstacle(x);
     }
 
-    // ----- Update function -----
     function update() {
-      // Hero physics
       velocity += 0.5;
       heroY += velocity;
       if (heroY < 0) heroY = 0;
@@ -56,26 +50,21 @@
         velocity = 0;
       }
 
-      // Move obstacles
       obstacles.forEach(obs => obs.x -= 2);
       const last = obstacles[obstacles.length - 1];
       if (last.x < canvas.width - OBSTACLE_SPACING) spawnObstacle(canvas.width);
       if (obstacles[0].x + OBSTACLE_WIDTH < 0) obstacles.shift();
     }
 
-    // ----- Draw function -----
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Draw obstacles
       obstacles.forEach(obs => {
-        // Top skyscraper
         ctx.drawImage(
           skyscraperImg,
           0, 0, skyscraperImg.width, obs.topHeight,
           obs.x, 0, OBSTACLE_WIDTH, obs.topHeight
         );
-        // Bottom skyscraper
         const bottomHeight = canvas.height - obs.bottomY;
         ctx.drawImage(
           skyscraperImg,
@@ -85,12 +74,10 @@
         );
       });
 
-      // Draw hero frame
       const heroImg = frames[frameIndex];
       ctx.drawImage(heroImg, heroX, heroY, heroWidth, heroHeight);
     }
 
-    // ----- Game loop -----
     function loop() {
       update();
       draw();
@@ -98,13 +85,12 @@
     }
     loop();
 
-    // ----- Input handler -----
     canvas.addEventListener('click', () => {
       velocity = -10;
       frameIndex = 1;
       setTimeout(() => { frameIndex = 0; }, 100);
     });
-
   </script>
 </body>
 </html>
+
