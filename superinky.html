@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>SuperInky</title>
   <style>
-    html, body { margin: 0; padding: 0; background: transparent; overflow: hidden; }
+    html, body { margin: 0; padding: 0; overflow: hidden; }
     #game { display: block; margin: 0 auto; background: #87CEEB; }
   </style>
 </head>
@@ -14,10 +14,17 @@
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
 
+    const backgroundImg = new Image();
+    backgroundImg.src = 'background.jpg'; // your background picture
+
     const frames = ['superinky_fly1.PNG','superinky_fly2.PNG'].map(src => {
       const img = new Image(); img.src = src; return img;
     });
     let frameIndex = 0;
+
+    const skyscraperImages = ['skyscraper1.PNG','skyscraper2.PNG','skyscraper3.PNG'].map(src => {
+      const img = new Image(); img.src = src; return img;
+    });
 
     const heroWidth = 64;
     const heroHeight = 64;
@@ -25,21 +32,19 @@
     let heroY = canvas.height / 2;
     let velocity = 0;
 
-    const gravity = 0.01;
-    const jump = -3;
+    const gravity = 0.05;
+    const jump = -1;
     const skyscraperSpeed = 1;
-    const skyscraperGap = 10; // Reset gap between top and bottom
-    const OBSTACLE_SPACING = 400; // Increased distance between obstacles
+    const skyscraperGap = 400;
+    const OBSTACLE_SPACING = 400;
+    const OBSTACLE_WIDTH = 120; // Wider skyscrapers
 
-    const skyscraperImg = new Image();
-    skyscraperImg.src = 'skyscraper.PNG';
-    const OBSTACLE_WIDTH   = 80;
-    const OBSTACLE_GAP     = skyscraperGap;
     const obstacles = [];
 
     function spawnObstacle(x) {
-      const topHeight = 50 + Math.random() * (canvas.height - OBSTACLE_GAP - 100);
-      obstacles.push({ x, topHeight, bottomY: topHeight + OBSTACLE_GAP });
+      const topHeight = 50 + Math.random() * (canvas.height - skyscraperGap - 100);
+      const img = skyscraperImages[Math.floor(Math.random() * skyscraperImages.length)];
+      obstacles.push({ x, topHeight, bottomY: topHeight + skyscraperGap, img });
     }
 
     for (let x = canvas.width; x < canvas.width + OBSTACLE_SPACING * 3; x += OBSTACLE_SPACING) {
@@ -54,7 +59,6 @@
         heroY = canvas.height - heroHeight;
         velocity = 0;
       }
-
       obstacles.forEach(obs => obs.x -= skyscraperSpeed);
       const last = obstacles[obstacles.length - 1];
       if (last.x < canvas.width - OBSTACLE_SPACING) spawnObstacle(canvas.width);
@@ -62,23 +66,21 @@
     }
 
     function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
+      ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
       obstacles.forEach(obs => {
         ctx.drawImage(
-          skyscraperImg,
-          0, 0, skyscraperImg.width, obs.topHeight,
+          obs.img,
+          0, 0, obs.img.width, obs.topHeight,
           obs.x, 0, OBSTACLE_WIDTH, obs.topHeight
         );
         const bottomHeight = canvas.height - obs.bottomY;
         ctx.drawImage(
-          skyscraperImg,
-          0, skyscraperImg.height - bottomHeight,
-          skyscraperImg.width, bottomHeight,
+          obs.img,
+          0, obs.img.height - bottomHeight,
+          obs.img.width, bottomHeight,
           obs.x, obs.bottomY, OBSTACLE_WIDTH, bottomHeight
         );
       });
-
       const heroImg = frames[frameIndex];
       ctx.drawImage(heroImg, heroX, heroY, heroWidth, heroHeight);
     }
@@ -98,3 +100,4 @@
   </script>
 </body>
 </html>
+
