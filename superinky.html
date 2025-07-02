@@ -31,9 +31,11 @@
     const gravity = 0.05;
     const jump = -3;
 
-    // ----- Obstacle (skyscraper) setup -----
-    const skyscraperImg = new Image();
-    skyscraperImg.src = 'skyscraper.PNG';
+    // ----- Obstacle (skyscrapers) setup -----
+    const skyscraperSrcs = ['skyscraper1.PNG','skyscraper2.PNG','skyscraper3.PNG'];
+    const skyscraperImgs = skyscraperSrcs.map(src => {
+      const img = new Image(); img.src = src; return img;
+    });
     const OBSTACLE_WIDTH   = 80;
     const OBSTACLE_GAP     = 360;
     const OBSTACLE_SPACING = 400;
@@ -42,7 +44,9 @@
 
     function spawnObstacle(x) {
       const topHeight = 50 + Math.random() * (canvas.height - OBSTACLE_GAP - 100);
-      obstacles.push({ x, topHeight, bottomY: topHeight + OBSTACLE_GAP });
+      // pick random building image
+      const img = skyscraperImgs[Math.floor(Math.random() * skyscraperImgs.length)];
+      obstacles.push({ x, topHeight, bottomY: topHeight + OBSTACLE_GAP, img });
     }
 
     // Seed initial obstacles
@@ -50,68 +54,48 @@
       spawnObstacle(x);
     }
 
-    // ----- Update function -----
+    // ----- Update -----
     function update() {
-      // Hero physics
       velocity += gravity;
       heroY += velocity;
       if (heroY < 0) heroY = 0;
-      if (heroY + heroHeight > canvas.height) {
-        heroY = canvas.height - heroHeight;
-        velocity = 0;
-      }
+      if (heroY + heroHeight > canvas.height) { heroY = canvas.height - heroHeight; velocity = 0; }
 
-      // Move obstacles
       obstacles.forEach(obs => obs.x -= skyscraperSpeed);
       const last = obstacles[obstacles.length - 1];
       if (last.x < canvas.width - OBSTACLE_SPACING) spawnObstacle(canvas.width);
       if (obstacles[0].x + OBSTACLE_WIDTH < 0) obstacles.shift();
     }
 
-    // ----- Draw function -----
+    // ----- Draw -----
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Draw skyscrapers
       obstacles.forEach(obs => {
-        // Top building (upside down)
+        // Top (upside down)
         ctx.save();
         ctx.translate(obs.x, obs.topHeight);
         ctx.scale(1, -1);
-        ctx.drawImage(
-          skyscraperImg,
-          0, 0, skyscraperImg.width, obs.topHeight,
-          0, 0, OBSTACLE_WIDTH, obs.topHeight
-        );
+        ctx.drawImage(obs.img, 0, 0, obs.img.width, obs.topHeight, 0, 0, OBSTACLE_WIDTH, obs.topHeight);
         ctx.restore();
-        // Bottom building
+        // Bottom
         const bottomHeight = canvas.height - obs.bottomY;
-        ctx.drawImage(
-          skyscraperImg,
-          0, skyscraperImg.height - bottomHeight,
-          skyscraperImg.width, bottomHeight,
-          obs.x, obs.bottomY, OBSTACLE_WIDTH, bottomHeight
-        );
+        ctx.drawImage(obs.img, 0, obs.img.height - bottomHeight, obs.img.width, bottomHeight, obs.x, obs.bottomY, OBSTACLE_WIDTH, bottomHeight);
       });
 
-      // Draw hero frame
       const heroImg = frames[frameIndex];
       ctx.drawImage(heroImg, heroX, heroY, heroWidth, heroHeight);
     }
 
     // ----- Game loop -----
-    function loop() {
-      update();
-      draw();
-      requestAnimationFrame(loop);
-    }
+    function loop() { update(); draw(); requestAnimationFrame(loop); }
     loop();
 
-    // ----- Input handler -----
+    // ----- Input -----
     canvas.addEventListener('click', () => {
       velocity = jump;
       frameIndex = 1;
-      setTimeout(() => { frameIndex = 0; }, 100);
+      setTimeout(() => frameIndex = 0, 100);
     });
   </script>
 </body>
