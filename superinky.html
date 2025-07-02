@@ -14,37 +14,36 @@
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
 
-    // ----- Preload Hero Frames -----
-    const frames = ['superinky_fly1.PNG','superinky_fly2.PNG'].map(src => {
+    // Preload hero frames
+    const frames = ['superinky_fly1.PNG', 'superinky_fly2.PNG'].map(src => {
       const img = new Image(); img.src = src; return img;
     });
     let frameIndex = 0;
 
-    // ----- Hero properties -----
-    const heroWidth = 64;
-    const heroHeight = 64;
-    let heroX = canvas.width / 4;
+    // Hero properties
+    const heroWidth = 64, heroHeight = 64;
+    const heroX = canvas.width / 4;
     let heroY = canvas.height / 2;
     let velocity = 0;
 
-    // ----- Physics & Control -----
+    // Physics & control
     const gravity = 0.05;
     const jump = -3;
 
-    // ----- Obstacle (skyscrapers) setup -----
-    const skyscraperSrcs = ['skyscraper1.PNG','skyscraper2.PNG','skyscraper3.PNG'];
+    // Obstacle setup: 3 skyscraper variants
+    const skyscraperSrcs = ['skyscraper1.PNG', 'skyscraper2.PNG', 'skyscraper3.PNG'];
     const skyscraperImgs = skyscraperSrcs.map(src => {
       const img = new Image(); img.src = src; return img;
     });
-    const OBSTACLE_WIDTH   = 80;
-    const OBSTACLE_GAP     = 360;
+
+    const OBSTACLE_WIDTH = 80;
+    const OBSTACLE_GAP = 360;
     const OBSTACLE_SPACING = 400;
-    const skyscraperSpeed  = 1;
+    const skyscraperSpeed = 1;
     const obstacles = [];
 
     function spawnObstacle(x) {
       const topHeight = 50 + Math.random() * (canvas.height - OBSTACLE_GAP - 100);
-      // pick random building image
       const img = skyscraperImgs[Math.floor(Math.random() * skyscraperImgs.length)];
       obstacles.push({ x, topHeight, bottomY: topHeight + OBSTACLE_GAP, img });
     }
@@ -54,44 +53,53 @@
       spawnObstacle(x);
     }
 
-    // ----- Update -----
+    // Update positions
     function update() {
       velocity += gravity;
       heroY += velocity;
       if (heroY < 0) heroY = 0;
-      if (heroY + heroHeight > canvas.height) { heroY = canvas.height - heroHeight; velocity = 0; }
-
+      if (heroY + heroHeight > canvas.height) {
+        heroY = canvas.height - heroHeight;
+        velocity = 0;
+      }
       obstacles.forEach(obs => obs.x -= skyscraperSpeed);
       const last = obstacles[obstacles.length - 1];
       if (last.x < canvas.width - OBSTACLE_SPACING) spawnObstacle(canvas.width);
       if (obstacles[0].x + OBSTACLE_WIDTH < 0) obstacles.shift();
     }
 
-    // ----- Draw -----
+    // Draw everything
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
       obstacles.forEach(obs => {
-        // Top (upside down)
+        // Top segment: tiled and upside-down
         ctx.save();
         ctx.translate(obs.x, obs.topHeight);
         ctx.scale(1, -1);
-        ctx.drawImage(obs.img, 0, 0, obs.img.width, obs.topHeight, 0, 0, OBSTACLE_WIDTH, obs.topHeight);
+        for (let y = 0; y < obs.topHeight; y += obs.img.height) {
+          ctx.drawImage(obs.img, 0, y, OBSTACLE_WIDTH, obs.img.height);
+        }
         ctx.restore();
-        // Bottom
+        // Bottom segment: tiled normally
         const bottomHeight = canvas.height - obs.bottomY;
-        ctx.drawImage(obs.img, 0, obs.img.height - bottomHeight, obs.img.width, bottomHeight, obs.x, obs.bottomY, OBSTACLE_WIDTH, bottomHeight);
+        for (let y = 0; y < bottomHeight; y += obs.img.height) {
+          ctx.drawImage(obs.img, obs.x, obs.bottomY + y, OBSTACLE_WIDTH, obs.img.height);
+        }
       });
-
+      // Draw hero
       const heroImg = frames[frameIndex];
       ctx.drawImage(heroImg, heroX, heroY, heroWidth, heroHeight);
     }
 
-    // ----- Game loop -----
-    function loop() { update(); draw(); requestAnimationFrame(loop); }
+    // Main loop
+    function loop() {
+      update();
+      draw();
+      requestAnimationFrame(loop);
+    }
     loop();
 
-    // ----- Input -----
+    // Input: click/tap to jump
     canvas.addEventListener('click', () => {
       velocity = jump;
       frameIndex = 1;
